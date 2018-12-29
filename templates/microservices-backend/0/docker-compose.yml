@@ -1,0 +1,181 @@
+version: '2'
+services:
+  mysqldb:
+    image: mysql:latest
+    mem_limit: 1073741824
+    restart: unless-stopped
+    ports:
+      - "3306/tcp"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: auth
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: name=database
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+
+  configserver:
+    image: ${DOCKER_IMAGE_ORGANIZATION}/basic-config-server:${DOCKER_IMAGE_TAG}
+    mem_limit: 1073741824
+    restart: unless-stopped
+    ports:
+      - "8888/tcp"
+    command:
+      - while ! mysqladmin ping -h"mysqldb" -u"root" -p"password" --silent; do echo Waiting for mySql database to start; sleep 5; done; /app/run.sh
+    depends_on:
+      - mysqldb
+    environment:
+      - JAVA_OPTIONS=${JAVA_JVM_OPTIONS}
+      - SPRING_ACTIVE_PROFILE=${SPRING_ACTIVE_PROFILE}
+      - GIT_BRANCH_LABEL=${CONFIG_GIT_BRANCH_LABEL}
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: backend-2=true
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+
+  eurekaregistry:
+    image: ${DOCKER_IMAGE_ORGANIZATION}/basic-webservice-registry:${DOCKER_IMAGE_TAG}
+    mem_limit: 1073741824
+    restart: unless-stopped
+    ports:
+      - "8761:8761/tcp"
+    command:
+      - while ! curl -s http://configserver:8888/health > /dev/null; do echo Waiting for Config Service to start; sleep 5; done; /app/run.sh
+    environment:
+      - JAVA_OPTIONS=${JAVA_JVM_OPTIONS}
+      - SPRING_ACTIVE_PROFILE=${SPRING_ACTIVE_PROFILE}
+      - GIT_BRANCH_LABEL=${CONFIG_GIT_BRANCH_LABEL}
+    links:
+      - configserver:configserver
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: backend-1=true
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+
+  authserver:
+    image: ${DOCKER_IMAGE_ORGANIZATION}/basic-auth-server:${DOCKER_IMAGE_TAG}
+    mem_limit: 1073741824
+    restart: unless-stopped
+    ports:
+      - "8899/tcp"
+    command:
+      - while ! curl -s http://eurekaregistry:8761/health > /dev/null; do echo Waiting for Eureka Registry to start; sleep 5; done; /app/run.sh
+    environment:
+      - JAVA_OPTIONS=${JAVA_JVM_OPTIONS}
+      - SPRING_ACTIVE_PROFILE=${SPRING_ACTIVE_PROFILE}
+      - GIT_BRANCH_LABEL=${CONFIG_GIT_BRANCH_LABEL}
+    links:
+      - eurekaregistry:eurekaregistry
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: backend-2=true
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+
+  apigateway:
+    image: ${DOCKER_IMAGE_ORGANIZATION}/basic-api-gateway:${DOCKER_IMAGE_TAG}
+    mem_limit: 1073741824
+    restart: unless-stopped
+    ports:
+      - "8765:8765/tcp"
+    command:
+      - while ! curl -s http://authserver:8899/health > /dev/null; do echo Waiting for OAuth2 Server to start; sleep 5; done; /app/run.sh
+    environment:
+      - JAVA_OPTIONS=${JAVA_JVM_OPTIONS}
+      - SPRING_ACTIVE_PROFILE=${SPRING_ACTIVE_PROFILE}
+      - GIT_BRANCH_LABEL=${CONFIG_GIT_BRANCH_LABEL}
+    links:
+      - authserver:authserver
+    labels:
+      io.rancher.scheduler.affinity:host_label: frontend=true
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+
+#  webportal:
+#    image: ${DOCKER_IMAGE_ORGANIZATION}/basic-web-portal:${DOCKER_IMAGE_TAG}
+#    mem_limit: 1073741824
+#    restart: unless-stopped
+#    ports:
+#      - "8080/tcp"
+#    command:
+#      - while ! curl -s http://eurekaregistry:8761/health > /dev/null; do echo Waiting for Eureka Registry to start; sleep 5; done; /app/run.sh
+#    depends_on:
+#      - eurekaregistry
+#    labels:
+#      io.rancher.scheduler.affinity:host_label_soft: name=aa
+#      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+#      io.rancher.container.pull_image: always
+
+  userwebservice:
+    image: ${DOCKER_IMAGE_ORGANIZATION}/basic-user-webservice:${DOCKER_IMAGE_TAG}
+    mem_limit: 1073741824
+    restart: unless-stopped
+    ports:
+      - "8080/tcp"
+    command:
+      - while ! curl -s http://eurekaregistry:8761/health > /dev/null; do echo Waiting for Eureka Registry to start; sleep 5; done; /app/run.sh
+    environment:
+      - JAVA_OPTIONS=${JAVA_JVM_OPTIONS}
+      - SPRING_ACTIVE_PROFILE=${SPRING_ACTIVE_PROFILE}
+      - GIT_BRANCH_LABEL=${CONFIG_GIT_BRANCH_LABEL}
+    links:
+      - eurekaregistry:eurekaregistry
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: backend-2=true
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+
+  taskwebservice:
+    image: ${DOCKER_IMAGE_ORGANIZATION}/basic-task-webservice:${DOCKER_IMAGE_TAG}
+    mem_limit: 1073741824
+    restart: unless-stopped
+    ports:
+      - "8080/tcp"
+    command:
+      - while ! curl -s http://eurekaregistry:8761/health > /dev/null; do echo Waiting for Eureka Registry to start; sleep 5; done; /app/run.sh
+    environment:
+      - JAVA_OPTIONS=${JAVA_JVM_OPTIONS}
+      - SPRING_ACTIVE_PROFILE=${SPRING_ACTIVE_PROFILE}
+      - GIT_BRANCH_LABEL=${CONFIG_GIT_BRANCH_LABEL}
+    links:
+      - eurekaregistry:eurekaregistry
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: backend-1=true
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+
+  commentswebservice:
+    image: ${DOCKER_IMAGE_ORGANIZATION}/basic-comments-webservice:${DOCKER_IMAGE_TAG}
+    mem_limit: 1073741824
+    restart: unless-stopped
+    ports:
+      - "8080/tcp"
+    command:
+      - while ! curl -s http://eurekaregistry:8761/health > /dev/null; do echo Waiting for Eureka Registry to start; sleep 5; done; /app/run.sh
+    environment:
+      - JAVA_OPTIONS=${JAVA_JVM_OPTIONS}
+      - SPRING_ACTIVE_PROFILE=${SPRING_ACTIVE_PROFILE}
+      - GIT_BRANCH_LABEL=${CONFIG_GIT_BRANCH_LABEL}
+    links:
+      - eurekaregistry:eurekaregistry
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: backend-1=true
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+
+  zipkinserver:
+    image: ${DOCKER_IMAGE_ORGANIZATION}/basic-zipkin-server:${DOCKER_IMAGE_TAG}
+    mem_limit: 1073741824
+    restart: unless-stopped
+    ports:
+      - "9411:9411/tcp"
+    command:
+      - while ! curl -s http://configserver:8888/health > /dev/null; do echo Waiting for Config Service to start; sleep 5; done; /app/run.sh
+    environment:
+      - JAVA_OPTIONS=${JAVA_JVM_OPTIONS}
+      - SPRING_ACTIVE_PROFILE=${SPRING_ACTIVE_PROFILE}
+      - GIT_BRANCH_LABEL=${CONFIG_GIT_BRANCH_LABEL}
+    links:
+      - configserver:configserver
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: frontend=true
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always

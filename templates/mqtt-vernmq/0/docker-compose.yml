@@ -1,0 +1,20 @@
+version: '2'
+services:
+  vernemq-discovery-broker:
+    image: erlio/docker-vernemq:${VERNEMQ_DOCKER_IMAGE_TAG}
+    mem_limit: 3221225472
+    restart: unless-stopped
+    ports:
+      - "1883:1883/tcp"
+      - "8080:8080/tcp"
+    environment:
+      # $ needs escaping as $$
+      - DOCKER_VERNEMQ_USER_MOBILE_SUBSCRIBER=87$$56#admin
+      - DOCKER_VERNEMQ_LISTENER.TCP.MAX_CONNECTIONS=20000
+      - DOCKER_VERNEMQ_MAX_ONLINE_MESSAGES=10000
+    labels:
+      io.rancher.scheduler.affinity:host_label: frontend-mqtt=true
+      io.rancher.scheduler.affinity:container_label_hard_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+      io.rancher.container.requested_ip: ${VERNEMQ_DOCKER_DISCOVERY_BROKER_IP}
+      io.rancher.container.network: true

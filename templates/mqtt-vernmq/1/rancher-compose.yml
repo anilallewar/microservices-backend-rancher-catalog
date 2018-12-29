@@ -1,0 +1,55 @@
+.catalog:
+  name: Cluster-MQTT-VerneMQ-Server
+  version: 0.0.2
+  description: MQTT VerneMQ server that mobile clients will use to listen to events
+  uuid: backend_mqtt_vernemq_0.0.2
+  minimum_rancher_version: 1.6.10 # The minimum version of Rancher that supports the template
+  questions: #Used to request user input for configuration options
+    - variable: "VERNEMQ_DOCKER_IMAGE_TAG"
+      description: "The tag for vernemq docker image that you want to deploy"
+      label: "VerneMQ docker image tag:"
+      required: true
+      default: "1.3.0"
+      type: "string"
+    - variable: "VERNEMQ_DOCKER_DISCOVERY_BROKER_IP"
+      description: "VerneMQ needs specific IP to connect to for cluster discovery"
+      label: "VerneMQ discovery broker IP:"
+      required: true
+      default: "10.42.30.67"
+      type: "string"
+vernemq-discovery-broker:
+  retain_ip: true
+  scale: 1
+  health_check:
+      # Which port to perform the check against
+      port: 1883
+      # Interval between health checks - all time units in milliseconds
+      interval: 10000
+      # Timeout when the container is in the initializing state - set to 5 minutes
+      initializing_timeout: 300000
+      # Timeout when the container is in the re-initializing state if it was killed
+      # - set to 5 minutes
+      reinitializing_timeout: 300000
+      # The number of successful check responses before a (currently marked unhealthy)
+      # container is considered healthy again.
+      unhealthy_threshold: 3
+      # Strategy for what to do when unhealthy
+      # In this service, Rancher will recreate any unhealthy containers
+      strategy: recreate
+      # The number of failed check responses before a (currently marked healthy)
+      # container is considered unhealthy.
+      healthy_threshold: 2
+      # The number of milliseconds before a check without response times out.
+      response_timeout: 20000
+vernemq-broker:
+  retain_ip: true
+  scale: 1
+  health_check:
+      port: 1883
+      interval: 10000
+      initializing_timeout: 300000
+      reinitializing_timeout: 300000
+      unhealthy_threshold: 3
+      strategy: recreate
+      healthy_threshold: 2
+      response_timeout: 20000

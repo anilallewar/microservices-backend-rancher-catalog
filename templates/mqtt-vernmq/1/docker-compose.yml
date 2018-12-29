@@ -1,0 +1,36 @@
+version: '2'
+services:
+  vernemq-discovery-broker:
+    image: erlio/docker-vernemq:${VERNEMQ_DOCKER_IMAGE_TAG}
+    mem_limit: 3221225472
+    restart: unless-stopped
+    ports:
+      - "1883:1883/tcp"
+      - "8080:8080/tcp"
+    environment:
+      # $ needs escaping as $$
+      - DOCKER_VERNEMQ_USER_MOBILE_SUBSCRIBER=87$$56#admin
+    labels:
+      io.rancher.scheduler.affinity:host_label: frontend-mqtt=true
+      io.rancher.scheduler.affinity:container_label_hard_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+      io.rancher.container.requested_ip: ${VERNEMQ_DOCKER_DISCOVERY_BROKER_IP}
+      io.rancher.container.network: true
+
+  vernemq-broker:
+    image: erlio/docker-vernemq:${VERNEMQ_DOCKER_IMAGE_TAG}
+    mem_limit: 3221225472
+    restart: unless-stopped
+    ports:
+      - "1883:1883/tcp"
+      - "8080:8080/tcp"
+    environment:
+      - DOCKER_VERNEMQ_USER_MOBILE_SUBSCRIBER=87$$56#admin
+      - DOCKER_VERNEMQ_DISCOVERY_NODE=${VERNEMQ_DOCKER_DISCOVERY_BROKER_IP}
+    links:
+      - vernemq-discovery-broker:vernemq-discovery-broker
+    labels:
+      io.rancher.scheduler.affinity:host_label: frontend-mqtt=true
+      io.rancher.scheduler.affinity:container_label_hard_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+      io.rancher.container.network: true

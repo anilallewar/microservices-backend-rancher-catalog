@@ -1,0 +1,52 @@
+version: '2'
+services:
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper:4.0.0
+    restart: unless-stopped
+    ports:
+      - "2181:2181/tcp"
+      - "2888:2888/tcp"
+      - "3888:3888/tcp"
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: ${ZK_TICK_TIME}
+      ZOOKEEPER_INIT_LIMIT: ${ZK_INIT_LIMIT}
+      ZOOKEEPER_SYNC_LIMIT: ${ZK_SYNC_LIMIT}
+      ZK_MAX_CLIENT_CXNS: ${ZK_MAX_CLIENT_CXNS}
+      ZOOKEEPER_SERVERS: 0.0.0.0:2888:3888
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: kafka-zk=server-1
+      io.rancher.scheduler.affinity:container_label_hard_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+      io.rancher.container.requested_ip: ${ZK_SERVER_1}
+      io.rancher.container.network: true
+    volumes:
+      - ${ZOOKEEPER_DATA_DIRECTORY}:/var/lib/zookeeper/data
+      - ${ZOOKEEPER_LOG_DIRECTORY}:/var/lib/zookeeper/log
+
+  kafka-1:
+    image: confluentinc/cp-kafka:3.3.0
+    restart: unless-stopped
+    links:
+      - zookeeper-1:zookeeper-1
+    ports:
+      - "9092:9092/tcp"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: ${ZK_SERVER_1}:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_SERVER_1}:9092
+      KAFKA_LISTENERS: PLAINTEXT://${KAFKA_SERVER_1}:9092
+      KAFKA_LOG_RETENTION_HOURS: ${KAFKA_LOG_RETENTION_HOURS}
+      KAFKA_NUM_INSYNC_REPLICAS: ${KAFKA_NUM_INSYNC_REPLICAS}
+      KAFKA_NUM_PARTITIONS: ${KAFKA_NUM_PARTITIONS}
+      KAFKA_DEFAULT_REPLICATION_FACTOR: ${KAFKA_DEFAULT_REPLICATION_FACTOR}
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_DEFAULT_REPLICATION_FACTOR}
+    labels:
+      io.rancher.scheduler.affinity:host_label_soft: kafka-zk=server-1
+      io.rancher.scheduler.affinity:container_label_hard_ne: io.rancher.stack_service.name=$${stack_name}/$${service_name}
+      io.rancher.container.pull_image: always
+      io.rancher.container.requested_ip: ${KAFKA_SERVER_1}
+      io.rancher.container.network: true
+    volumes:
+      - ${KAFKA_DATA_DIRECTORY}:/var/lib/kafka/data

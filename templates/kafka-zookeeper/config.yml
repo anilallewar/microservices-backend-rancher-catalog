@@ -1,0 +1,7 @@
+name: Backend-Kafka-Zookeeper
+description: |
+  Kafka and Zookeeper that provide the distributed queue and object store for the booking functionality
+version: 0.0.2
+category: Third Party
+maintainer: Anil Allewar (anilallewar@yahoo.co.in)
+license: Apache 2

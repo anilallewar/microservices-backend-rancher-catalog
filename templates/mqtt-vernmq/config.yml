@@ -1,0 +1,7 @@
+name: MQTT-VerneMQ-Server
+description: |
+  MQTT VerneMQ server that mobile clients will use to listen to events
+version: 0.0.2
+category: Third Party
+maintainer: Anil Allewar (anilallewar@yahoo.co.in)
+license: Apache 2

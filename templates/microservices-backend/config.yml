@@ -1,0 +1,7 @@
+name: Backend-Microservices
+description: |
+  Microservices deployment on Rancher for sample app
+version: 0.0.2
+category: Backend
+maintainer: Anil Allewar (anilallewar@yahoo.co.in)
+license: Apache 2

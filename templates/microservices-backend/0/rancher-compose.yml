@@ -1,0 +1,152 @@
+.catalog:
+  name: Microservices-Infrastructure-Services
+  version: 0.0.1
+  description: Backend services that are used to provide the backbone for Microservices
+  uuid: backend_infra_services_0.0.1
+  minimum_rancher_version: 1.6.10 # The minimum version of Rancher that supports the template
+  questions: #Used to request user input for configuration options
+    - variable: "DOCKER_IMAGE_ORGANIZATION"
+      description: "The organization of docker image for all the services that you want to deploy"
+      label: "Docker image organization tag:"
+      required: true
+      default: "anilallewar"
+      type: "string"
+    - variable: "DOCKER_IMAGE_TAG"
+      description: "The tag for docker image for all the services that you want to deploy"
+      label: "Services docker image tag:"
+      required: true
+      default: "0.0.1"
+      type: "string"
+    - variable: "SPRING_ACTIVE_PROFILE"
+      description: "Active Spring profile that defines the environment where you want to deploy the catalog"
+      label: "Spring environment profile:"
+      required: true
+      default: "docker"
+      type: "string"
+    - variable: "JAVA_JVM_OPTIONS"
+      description: "JVM options that you want to override for Java running in the Docker container"
+      label: "Java JVM Options:"
+      required: true
+      default: "-Xmx1024m"
+      type: "string"
+    - variable: "CONFIG_GIT_BRANCH_LABEL"
+      description: "The configuration is hosted on Github - provide the git branch that has the configuraton used to configure the application"
+      label: "Config Server Git Branch:"
+      required: true
+      default: "develop"
+      type: "string"
+mysqldb:
+  scale: 1
+  health_check:
+      # Which port to perform the check against
+      port: 3306
+      # Interval is measured in milliseconds
+      interval: 5000
+      initializing_timeout: 20000
+      unhealthy_threshold: 3
+      # Strategy for what to do when unhealthy
+      # In this service, Rancher will recreate any unhealthy containers
+      strategy: none
+      healthy_threshold: 2
+      # Response timeout is measured in milliseconds
+      response_timeout: 2000
+configserver:
+  scale: 1
+  health_check:
+      # Which port to perform the check against
+      port: 8888
+      # Interval between health checks - all time units in milliseconds
+      interval: 10000
+      # Timeout when the container is in the initializing state - set to 5 minutes
+      initializing_timeout: 300000
+      # Timeout when the container is in the re-initializing state if it was killed
+      # - set to 5 minutes
+      reinitializing_timeout: 300000
+      # The number of successful check responses before a (currently marked unhealthy)
+      # container is considered healthy again.
+      unhealthy_threshold: 3
+      # Strategy for what to do when unhealthy
+      # In this service, Rancher will recreate any unhealthy containers
+      strategy: recreate
+      # The number of failed check responses before a (currently marked healthy)
+      # container is considered unhealthy.
+      healthy_threshold: 2
+      # The number of milliseconds before a check without response times out.
+      response_timeout: 20000
+eurekaregistry:
+  scale: 1
+  health_check:
+      port: 8761
+      interval: 10000
+      initializing_timeout: 300000
+      reinitializing_timeout: 300000
+      unhealthy_threshold: 3
+      strategy: recreate
+      healthy_threshold: 2
+      response_timeout: 20000
+zipkinserver:
+  scale: 1
+  health_check:
+      port: 9411
+      interval: 10000
+      initializing_timeout: 300000
+      reinitializing_timeout: 300000
+      unhealthy_threshold: 3
+      strategy: recreate
+      healthy_threshold: 2
+      response_timeout: 20000
+apigateway:
+  scale: 1
+  health_check:
+      port: 8765
+      interval: 10000
+      initializing_timeout: 300000
+      reinitializing_timeout: 300000
+      unhealthy_threshold: 3
+      strategy: recreate
+      healthy_threshold: 2
+      response_timeout: 20000
+authserver:
+  scale: 1
+  health_check:
+      port: 8899
+      interval: 10000
+      initializing_timeout: 300000
+      reinitializing_timeout: 300000
+      unhealthy_threshold: 3
+      strategy: recreate
+      healthy_threshold: 2
+      response_timeout: 20000
+userwebservice:
+  scale: 1
+  health_check:
+      port: 8080
+      interval: 10000
+      initializing_timeout: 300000
+      reinitializing_timeout: 300000
+      unhealthy_threshold: 3
+      strategy: recreate
+      healthy_threshold: 2
+      response_timeout: 20000
+taskwebservice:
+  scale: 1
+  health_check:
+      port: 8080
+      interval: 10000
+      initializing_timeout: 300000
+      reinitializing_timeout: 300000
+      unhealthy_threshold: 3
+      strategy: recreate
+      healthy_threshold: 2
+      response_timeout: 20000
+commentswebservice:
+  scale: 1
+  health_check:
+      port: 8080
+      interval: 10000
+      initializing_timeout: 300000
+      reinitializing_timeout: 300000
+      unhealthy_threshold: 3
+      strategy: recreate
+      healthy_threshold: 2
+      response_timeout: 20000
